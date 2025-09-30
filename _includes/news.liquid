@@ -1,3 +1,4 @@
+{% if site.enable_news != false %}
 <div class="news">
   {% if site.news != blank %}
     {% assign news_size = site.news | size %}
@@ -32,3 +33,4 @@
     <p>No news so far...</p>
   {% endif %}
 </div>
+{% endif %}
