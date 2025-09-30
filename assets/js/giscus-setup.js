@@ -18,7 +18,7 @@ function determineGiscusTheme() {
 
   let giscusAttributes = {
     src: "https://giscus.app/client.js",
-    "data-repo": "2022tgoel/academic-website",
+    "data-repo": "tarushii-g/tarushii-g.github.io",
     "data-repo-id": "",
     "data-category": "Comments",
     "data-category-id": "",
