@@ -1,7 +1,7 @@
 ---
 layout: distill
 title: On the Complexity of Attention Variants (part i)
-description: Analyzing NC1, TC0, and where different models fit. # todo: can have a catchier description / intro I think 
+description: Analyzing NC1, TC0, and where different models fit. # todo: can have a catchier description / intro I think
 tags: architecture, theory
 date: 2025-10-01
 published: true
@@ -16,7 +16,7 @@ authors:
     affiliations:
       name: MIT CSAIL
 
-bibliography: complexity-theory.bib
+bibliography: 2025-10-01-linear-attn-complexity.bib
 
 
 ---
@@ -27,9 +27,9 @@ Recent models such as [DeltaNet](https://sustcsonglin.github.io/assets/pdf/talk_
 
 When we analyze the computational power of different architectures, it helps to start with concrete problems we care about. One very important class of problems is *state tracking*: given a sequence of inputs that update some underlying system, can the model keep track of the current state of that system?
 
-A canonical example is group composition, specifically in the symmetric group on five elements, $S_5$. The problem is: given a sequence of permutations, compute their composition.  
+A canonical example is group composition, specifically in the symmetric group on five elements, $S_5$. The problem is: given a sequence of permutations, compute their composition.
 
-For example: 
+For example:
 > Start with the ordering 1,2,3,4,5. Apply the following permutations: swap elements 1 and 3; rotate elements 1, 3, and 4; swap elements 4 and 5.
 
 The final state is $4, 2, 3, 5, 1$. More generally, this is a version of the *group word problem*: given a sequence of group elements, is their product equal to the identity?
@@ -115,7 +115,7 @@ Finally, many papers also refer to $$\textit{L}$$-*uniform* circuit families, wh
 
 To understand the circuit complexity of different algorithms, we actually need to consider the datatype that we are performing arithmetic on. In practice, this is a fixed-size floating point or integer number. Adding fixed-size datatypes is clearly in $$TC_0$$, since the problem size is constant, but is also severely limiting of the theoretical expressivity of our model.
 
-For example, a fixed precision transformer does not have the capability of attending to every KV pair uniformly. <d-cite key="merrill2022logprecisionlogic"></d-cite> 
+For example, a fixed precision transformer does not have the capability of attending to every KV pair uniformly. <d-cite key="merrill2022logprecisionlogic"></d-cite>
 <!-- what does attending uniformly mean? -->
 
 {% include dd_parent_open.liquid title="Proof" %}
@@ -146,7 +146,7 @@ $$
 
 Thus computing the carry bit requires computing the propagators and generators, along with expressions of the form $p_{i-1} \land p_{i-2}... \land p_{j+1} \land g_j$. This expression is an AND with many inputs, which we've already shown can be computed with a single threshold gate! We can also compute an OR with unbounded fan-in by setting $\textbf{w} = 1$ and $\theta=1$, allowing us to check if least one AND expression is satisfied. With that, we can now add two numbers in $TC_{0}$!
 
-In practice, it has been shown that one-layer transformers trained to perform n-digit addition do in fact learn an algorithm similar to a carry-lookahead adder, with parallel preparation for each digit, but with a fixed window instead of a full lookahead tree (hence there exist failures at edge cases). <d-cite key="quirke2024understandingadditiontransformers"></d-cite> Other work on modular addition discover addition algorithms that are less carry-lookahead-like, though still involve parallel computation. <d-cite key="zhong2023clockpizzastoriesmechanistic"></d-cite> 
+In practice, it has been shown that one-layer transformers trained to perform n-digit addition do in fact learn an algorithm similar to a carry-lookahead adder, with parallel preparation for each digit, but with a fixed window instead of a full lookahead tree (hence there exist failures at edge cases). <d-cite key="quirke2024understandingadditiontransformers"></d-cite> Other work on modular addition discover addition algorithms that are less carry-lookahead-like, though still involve parallel computation. <d-cite key="zhong2023clockpizzastoriesmechanistic"></d-cite>
 
 ### Iterated Addition
 
@@ -159,7 +159,7 @@ $$. Then, we can construct a one-hot vector $\bf{o}$ for the value of the sum: $
 
 In fact, this approach works whenever the number of possible values of the sum is polynomial in $n$ (since we are only allowed a polynomial number of gates). The number of possible values of the sum is $n(2^m-1)+1$, so we can use the exact same approach to sum any polynomial number of $m=O(\log{n})$-bit numbers (for the threshold sums, we can weight a bit in position $i$ with weight $2^i$).
 
-The last step is to extend this to $n$-bit numbers. Consider the $n \times n$ bit array that stacks all of the numbers on top of each other. We can organize these bits into groups of $\log{n}$ columns, and label each group as even or odd in a striped fashion. When we add a single even group, the result will have at most $2 \log{n}$ bits, which means that the it would not reach the next even group. Thus, we can add all of the bits in all of the even groups, and then add the odd groups, and issue a final addition to add then together.
+The last step is to extend this to $n$-bit numbers. Consider the $n \times n$ bit array that stacks all of the numbers on top of each other. We can organize these bits into groups of $\log{n}$ columns, and label each group as even or odd in a striped fashion. When we add a single even group, the result will have at most $2 \log{n}$ bits, which means that the it would not reach the next even group. Thus, we can add all of the bits in all of the even groups, and then add the odd groups, and issue a final addition to add them together.
 
 
 Multiplication can be reformulated as iterated addition, which implies that multiplying two numbers is also in $TC_0$.
@@ -169,15 +169,25 @@ Multiplication can be reformulated as iterated addition, which implies that mult
 
 The algorithm for iterated multiplication is slightly more complicated and relies on other results in circuit complexity theory, but it is also in $\text{TC}^0$. To give a rough outline of the construction, we take the "[Chinese Remainder Representation](https://en.wikipedia.org/wiki/Chinese_remainder_theorem)," converting inputs to their residues modulo many small primes. Then, we perform all modular products in parallel and then reconstruct the binary result via CRT. Working modulo the small primes turns the $n$-bit integers into $\log(n)$-bit residues, which fits the iterated adder we set up earlier. Proving that each step is in $\text{TC}^0$ is however quite involved. <d-cite key="hesse2001division"></d-cite>
 
-## RNNs are $$\text{NC}^1$$-complete
+### Matrix Multiplication
+
+Matrix multiplication $AB = C$, $A \in \mathbb{R}^{m \times k}$, $B \in \mathbb{R}^{k \times n},$ can be decomposed into $mkn$ multiplications and $mn$ iterated additions. Thus, the amount of computation is polynomial in the size of the input, and we can construct an algorithm for it in $TC_0$ by composing together the algorithms for iterated addition/multiplication.
+
+## Results for Different Architectures
+
+### Transformers are in $\text{TC}^0$
+
+The transformer is an embedding layer, a constant number of self-attention and MLP blocks, and an output layer. Each layer itself can be decomposed into a constant number of matrix multiplications / element-wise computations, which gives an intuitive sense for why transformers are in $TC_0$. Even though self-attention is an $O(T^2)$ matrix multiplication, we have shown that as long as the matmul is polynomial in $T$ it is in $TC_0$.
+
+A computation that is not in $TC_0$ would involve layering on more matrix multiplications as the input size grows. This is how RNNs / SSMs work, which is what we'll look at next.
+
+### RNNs are $$\text{NC}^1$$-complete
 
 First prove $S^5$ is nc1-complete.
 
 RNNs can solve state-tracking. Basically there's 120 states and you just use a 120-D hidden state with one-hot basis vectors for each permutation, and then impl. I'll finish this -adam
 
-## Transformers are in $\text{TC}^0$
-
-## Some SSMs are in $$\text{TC}^0$$
+### Some SSMs are in $$\text{TC}^0$$
 
 A discrete-time generalized state space model with inputs $x_t$, hidden state $h_t$, and outputs $y_t$ can be written as
 
@@ -196,9 +206,21 @@ $$
 
 In the special case where $A_j = A$ (non time-varying), we can see that the above expression only uses iterated addition, multiplication, and *matrix-powering*, which is shown to also be in $\text{TC}^0$. <d-cite key="mereghetti2000threshold"></d-cite> This corresponds to the [S4](https://arxiv.org/pdf/2111.00396) model.
 
+{% include dd_parent_open.liquid title="Proof Sketch for Matrix Powering" %}
+
+The main insight is the to use the Cayley-Hamilton theorem to reduce the problem of multiplying a matrix $n$ times to multiplying it only $k$ times for some constant $k$.
+
+This theorem states that if we compute the characteristic polynomial for a matrix $M$: $$f(\lambda) = \det{(M - \lambda I)}$$
+
+then $f(M) = 0$. Here, $f$ is an order-$k$ polynomial if $M \in \mathbb{R}^{k \times k}$.
+
+Now, if we can factor $x^n = q(x) f(x) + r(x)$, then we know that $M^n = q(M) f(M) + r(M) = r(M)$. The remainder polynomial $r(M)$ is at most order $k-1$, so we have reduced the problem to computing a constant-size polynomial at $M$. The algorithm for performing polynomial arithmetic takes a similar spirit to the algorithms presented in the previous sections (e.g. polynomial multiplication is iterated addition and multiplication). <d-cite key="eberly1989veryfast"></d-cite>
+
+{% include dd_parent_close.liquid %}
+
 Additionally, when $A_j$ is diagonal or scalar times identity (which corresponds to [Mamba-2](https://arxiv.org/abs/2405.21060)), you are only using iterated addition and iterated multiplication, which implies that these special forms of the generalized SSM are also in $TC_0$.
 
 
-## Some SSMs are not in $$\text{TC}^0$$
+### Some SSMs are not in $$\text{TC}^0$$
 
 Delta-Net is not in $TC_0$. Instead of $A_t$ being a simple diagonal or constant matrix, it takes the form on identity plus low rank, and multiplying $n$ such matrices together is a non-trivial computation that no one has found an algorithm for in $TC_0$.
