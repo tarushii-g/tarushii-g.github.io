@@ -27,12 +27,14 @@ Recent models such as [DeltaNet](https://sustcsonglin.github.io/assets/pdf/talk_
 
 When we analyze the computational power of different architectures, it helps to start with concrete problems we care about. One very important class of problems is *state tracking*: given a sequence of inputs that update some underlying system, can the model keep track of the current state of that system?
 
-A canonical example of this is group composition, also known as the word problem for a group. For the symmetric group on 5 elements, $S_5$, the word problem is: given a sequence of permutations on 5 elements, compute the final state of the elements (the composition of the permutations). For example: 
+A canonical example is group composition, specifically in the symmetric group on five elements, $S_5$. The problem is: given a sequence of permutations, compute their composition.  
+
+For example: 
 > Start with the ordering 1,2,3,4,5. Apply the following permutations: swap elements 1 and 3; rotate elements 1, 3, and 4; swap elements 4 and 5.
 
-The final state is then $4, 2, 3, 5, 1$.
+The final state is $4, 2, 3, 5, 1$. More generally, this is a version of the *group word problem*: given a sequence of group elements, is their product equal to the identity?
 
-This type of problem implicitly shows up everywhere. For example, you could imagine trying to track the state of a chessboard as a sequence of moves is played, or the state of a codebase as a sequence of diffs is applied.
+This type of problem implicitly shows up everywhere. Imagine trying to track the state of a chessboard as a sequence of moves is played, or the state of a codebase as a sequence of diffs is applied.
 
 This problem is also quite significant from a complexity-theoretic perspective. The state-tracking problem for $S_5$ is known to be $\text{NC}^1$-complete, meaning it is "at least as hard" as any other problem in the complexity class $\text{NC}^1$, which we will later define. By contrast, problems in the (likely) weaker class $\text{TC}^0$ cannot simulate this task. As it turns out, an example of a problem that is in the weaker $\text{TC}^0$ class is *computing the result of a transformer's forward pass*. Hence, it can be shown that under the assumption that $\text{TC}^0\neq\text{NC}^1,$ transformers cannot solve state-tracking.
 
@@ -144,16 +146,18 @@ $$
 
 Thus computing the carry bit requires computing the propagators and generators, along with expressions of the form $p_{i-1} \land p_{i-2}... \land p_{j+1} \land g_j$. This expression is an AND with many inputs, which we've already shown can be computed with a single threshold gate! We can also compute an OR with unbounded fan-in by setting $\textbf{w} = 1$ and $\theta=1$, allowing us to check if least one AND expression is satisfied. With that, we can now add two numbers in $TC_{0}$!
 
+In practice, it has been shown that one-layer transformers trained to perform n-digit addition do in fact learn an algorithm similar to a carry-lookahead adder, with parallel preparation for each digit, but with a fixed window instead of a full lookahead tree (hence there exist failures at edge cases). <d-cite key="quirke2024understandingadditiontransformers"></d-cite> Other work on modular addition discover addition algorithms that are less carry-lookahead-like, though still involve parallel computation. <d-cite key="zhong2023clockpizzastoriesmechanistic"></d-cite> 
+
 ### Iterated Addition
 
 Now, let's look at the problem of adding $n$ numbers which are each $n$ bits.
 
-We can start with the simpler problem of adding $n$ bits ($b_1, ... b_n$). First observe that we can construct a threshold for each of the $n$ possible values of the sum:
+We can start with the simpler problem of adding $n$ numbers which are each $m=1$ bits ($b_1, ... b_n$). First observe that we can construct a threshold for each of the $n$ possible values of the sum:
 $$
 \mathbf{1}_{\sum_j b_j \geq i}
-$$. Then, we can construct a one-hot vector $\bf{o}$ for the value of the sum: $$o_i = \textbf{1}_{\sum_j b_j \geq i} \land \textbf{1}_{\sum_j -b_j \geq i}$$. Then, this $n$-dimensional one-hot vector can be mapped to the exact output in a single layer of threshold circuits.
+$$. Then, we can construct a one-hot vector $\bf{o}$ for the value of the sum: $$o_i = \textbf{1}_{\sum_j b_j \geq i} \land \textbf{1}_{\sum_j -b_j \geq -i}$$. Then, this $n$-dimensional one-hot vector can be mapped to the exact output in a single layer of threshold circuits.
 
-In fact, this approach works whenever the number of possible values of the sum is polynomial in $n$ (since we are only allowed a polynomial number of gates). Thus, we can use the exact same approach for any polynomial number of $O(\log{n})$-bit numbers (for the threshold sums, we can weight a bit in position $i$ with weight $2^i$).
+In fact, this approach works whenever the number of possible values of the sum is polynomial in $n$ (since we are only allowed a polynomial number of gates). The number of possible values of the sum is $n(2^m-1)+1$, so we can use the exact same approach to sum any polynomial number of $m=O(\log{n})$-bit numbers (for the threshold sums, we can weight a bit in position $i$ with weight $2^i$).
 
 The last step is to extend this to $n$-bit numbers. Consider the $n \times n$ bit array that stacks all of the numbers on top of each other. We can organize these bits into groups of $\log{n}$ columns, and label each group as even or odd in a striped fashion. When we add a single even group, the result will have at most $2 \log{n}$ bits, which means that the it would not reach the next even group. Thus, we can add all of the bits in all of the even groups, and then add the odd groups, and issue a final addition to add then together.
 
@@ -163,7 +167,7 @@ Multiplication can be reformulated as iterated addition, which implies that mult
 
 ### Iterated Multiplication
 
-The algorithm for iterated multiplication is slight more complicated, but it is also in $TC_0$. The proof is in Allender and Ogihara. <d-cite key="allender1999division"></d-cite>
+The algorithm for iterated multiplication is slightly more complicated and relies on other results in circuit complexity theory, but it is also in $\text{TC}^0$. To give a rough outline of the construction, we take the "[Chinese Remainder Representation](https://en.wikipedia.org/wiki/Chinese_remainder_theorem)," converting inputs to their residues modulo many small primes. Then, we perform all modular products in parallel and then reconstruct the binary result via CRT. Working modulo the small primes turns the $n$-bit integers into $\log(n)$-bit residues, which fits the iterated adder we set up earlier. Proving that each step is in $\text{TC}^0$ is however quite involved. <d-cite key="hesse2001division"></d-cite>
 
 ## RNNs are $$\text{NC}^1$$-complete
 
