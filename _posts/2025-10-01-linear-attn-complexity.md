@@ -34,9 +34,9 @@ For example:
 
 The final state is $4, 2, 3, 5, 1$. More generally, this is a version of the *group word problem*: given a sequence of group elements, is their product equal to the identity?
 
-This type of problem implicitly shows up everywhere. Imagine trying to track the state of a chessboard as a sequence of moves is played, or the state of a codebase as a sequence of diffs is applied.
+This type of problem implicitly shows up everywhere. Imagine trying to track the state of a chessboard as a sequence of moves is played, the state of a codebase as a sequence of diffs is applied, or the result of executing a program.
 
-This problem is also quite significant from a complexity-theoretic perspective. The state-tracking problem for $S_5$ is known to be $\text{NC}^1$-complete, meaning it is "at least as hard" as any other problem in the complexity class $\text{NC}^1$, which we will later define. By contrast, problems in the (likely) weaker class $\text{TC}^0$ cannot simulate this task. As it turns out, an example of a problem that is in the weaker $\text{TC}^0$ class is *computing the result of a transformer's forward pass*. Hence, it can be shown that under the assumption that $\text{TC}^0\neq\text{NC}^1,$ transformers cannot solve state-tracking.
+This particular problem is also quite significant from a complexity-theoretic perspective. The state-tracking problem for $S_5$ is known to be $\text{NC}^1$-complete, meaning it is "at least as hard" as any other problem in the complexity class $\text{NC}^1$, which we will later define. By contrast, problems in the (likely) weaker class $\text{TC}^0$ cannot simulate this task. As it turns out, an example of a problem that is in the weaker $\text{TC}^0$ class is *computing the result of a transformer's forward pass*. Hence, it can be shown that under the assumption that $\text{TC}^0\neq\text{NC}^1,$ transformers "cannot solve state-tracking."
 
 The goal of this blog post is to prove this statement, give some intuition as to why certain architectures can and cannot track state, and analyze implications of this for designing expressive architectures.
 
@@ -146,7 +146,7 @@ $$
 
 Thus computing the carry bit requires computing the propagators and generators, along with expressions of the form $p_{i-1} \land p_{i-2}... \land p_{j+1} \land g_j$. This expression is an AND with many inputs, which we've already shown can be computed with a single threshold gate! We can also compute an OR with unbounded fan-in by setting $\textbf{w} = 1$ and $\theta=1$, allowing us to check if least one AND expression is satisfied. With that, we can now add two numbers in $TC_{0}$!
 
-In practice, it has been shown that one-layer transformers trained to perform n-digit addition do in fact learn an algorithm similar to a carry-lookahead adder, with parallel preparation for each digit, but with a fixed window instead of a full lookahead tree (hence there exist failures at edge cases). <d-cite key="quirke2024understandingadditiontransformers"></d-cite> Other work on modular addition discover addition algorithms that are less carry-lookahead-like, though still involve parallel computation. <d-cite key="zhong2023clockpizzastoriesmechanistic"></d-cite>
+In practice, it has been shown that one-layer transformers trained to perform $n$-digit addition do in fact learn an algorithm similar to a carry-lookahead adder, with parallel preparation for each digit, but with a fixed window instead of a full lookahead tree (hence there exist failures at edge cases). <d-cite key="quirke2024understandingadditiontransformers"></d-cite> Other work on modular addition discovered addition algorithms that are less carry-lookahead-like, though still involve parallel computation. <d-cite key="zhong2023clockpizzastoriesmechanistic"></d-cite>
 
 ### Iterated Addition
 
@@ -171,7 +171,7 @@ The algorithm for iterated multiplication is slightly more complicated and relie
 
 ### Matrix Multiplication
 
-Matrix multiplication $AB = C$, $A \in \mathbb{R}^{m \times k}$, $B \in \mathbb{R}^{k \times n},$ can be decomposed into $mkn$ multiplications and $mn$ iterated additions. Thus, the amount of computation is polynomial in the size of the input, and we can construct an algorithm for it in $TC_0$ by composing together the algorithms for iterated addition/multiplication.
+Matrix multiplication $AB = C$, $A \in \mathbb{R}^{m \times k}$, $B \in \mathbb{R}^{k \times n},$ can be decomposed into $mkn$ multiplications and then $mn$ iterated additions. Thus, the amount of computation is polynomial in the size of the input, and we can construct an algorithm for it in $TC_0$ by composing together the algorithms for iterated addition/multiplication. It should make sense that matrix multiplication is in $\text{TC}^0$ because is a highly parallel workload with almost no sequential dependencies.
 
 ## Results for Different Architectures
 
@@ -179,11 +179,19 @@ Matrix multiplication $AB = C$, $A \in \mathbb{R}^{m \times k}$, $B \in \mathbb{
 
 The transformer is an embedding layer, a constant number of self-attention and MLP blocks, and an output layer. Each layer itself can be decomposed into a constant number of matrix multiplications / element-wise computations, which gives an intuitive sense for why transformers are in $TC_0$. Even though self-attention is an $O(T^2)$ matrix multiplication, we have shown that as long as the matmul is polynomial in $T$ it is in $TC_0$.
 
-A computation that is not in $TC_0$ would involve layering on more matrix multiplications as the input size grows. This is how RNNs / SSMs work, which is what we'll look at next.
+A computation that is not in $TC_0$ might involve not just increasing the size of the matrix multiplication as input size grows (as we do in attention), but rather layering on *more* matrix multiplications as the input size grows. This is how RNNs / SSMs work, which is what we'll look at next.
 
 ### RNNs are $$\text{NC}^1$$-complete
 
-First prove $S^5$ is nc1-complete.
+Recurrent neural networks (RNNs) are defined by a recurrence of the form
+
+$$
+h_t=f(A h_{t-1}+Bx_t),\quad y_t=g(C h_t),
+$$
+
+for some nonlinear activation functions $f$ and $g$, and weights $A,B,C$. Crucially, the same operation is iterated $T$ times, with each iteration depending on the previous hidden state. This means the *depth* of the computation grows with the size of the input. Note that this is not a proof that RNNs are not in $\text{TC}^0$, but rather strong intuition for why it should not be. 
+
+Now prove $S^5$ is nc1-complete.
 
 RNNs can solve state-tracking. Basically there's 120 states and you just use a 120-D hidden state with one-hot basis vectors for each permutation, and then impl. I'll finish this -adam
 
