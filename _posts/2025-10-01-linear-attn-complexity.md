@@ -21,7 +21,7 @@ bibliography: 2025-10-01-linear-attn-complexity.bib
 
 ---
 
-Recent models such as [DeltaNet](https://sustcsonglin.github.io/assets/pdf/talk_250117.pdf) and [RWKV-7](https://arxiv.org/abs/2503.14456) make claims about moving beyond the $$\text{TC}^0$$ complexity class, which the Transformer is confined to. Most discussion of neural network architecture complexity so far has remained in dense theoretical papers. This blog post will dig into what the claims actually mean from first principles, and why they may or may not matter in practice.
+Recent models such as [DeltaNet](https://sustcsonglin.github.io/assets/pdf/talk_250117.pdf) and [RWKV-7](https://arxiv.org/abs/2503.14456) make claims about moving beyond the $$\text{TC}^0$$ complexity class, which the transformer is confined to. Most discussion of neural network architecture complexity so far has remained in dense theoretical papers. This blog post will dig into what the claims actually mean from first principles, and why they may or may not matter in practice.
 
 ## Motivation: State Tracking
 
@@ -38,7 +38,7 @@ This type of problem implicitly shows up everywhere. Imagine trying to track the
 
 This particular problem is also quite significant from a complexity-theoretic perspective. The state-tracking problem for $S_5$ is known to be $\text{NC}^1$-complete, meaning it is "at least as hard" as any other problem in the complexity class $\text{NC}^1$, which we will later define. By contrast, problems in the (likely) weaker class $\text{TC}^0$ cannot simulate this task. As it turns out, an example of a problem that is in the weaker $\text{TC}^0$ class is *computing the result of a transformer's forward pass*. Hence, it can be shown that under the assumption that $\text{TC}^0\neq\text{NC}^1,$ transformers "cannot solve state-tracking."
 
-The goal of this blog post is to prove this statement, give some intuition as to why certain architectures can and cannot track state, and analyze implications of this for designing expressive architectures.
+The goal of this blog post is to prove this statement and similar statements for other architectures, give some intuition as to why certain architectures can or cannot track state, and analyze implications of this for designing expressive architectures.
 
 
 ## A Background on Circuit Complexity Classes
@@ -171,7 +171,7 @@ The algorithm for iterated multiplication is slightly more complicated and relie
 
 ### Matrix Multiplication
 
-Matrix multiplication $AB = C$, $A \in \mathbb{R}^{m \times k}$, $B \in \mathbb{R}^{k \times n},$ can be decomposed into $mkn$ multiplications and then $mn$ iterated additions. Thus, the amount of computation is polynomial in the size of the input, and we can construct an algorithm for it in $TC_0$ by composing together the algorithms for iterated addition/multiplication. It should make sense that matrix multiplication is in $\text{TC}^0$ because is a highly parallel workload with almost no sequential dependencies.
+Matrix multiplication $AB = C$, $A \in \mathbb{R}^{m \times k}$, $B \in \mathbb{R}^{k \times n},$ can be decomposed into $mkn$ multiplications and then $mn$ iterated additions. Thus, the amount of computation is polynomial in the size of the input, and we can construct an algorithm for it in $TC_0$ by composing together the algorithms for iterated addition/multiplication. It should make sense that matrix multiplication is in $\text{TC}^0$ because is a highly parallel workload with almost no sequential dependency.
 
 ## Results for Different Architectures
 
@@ -179,7 +179,7 @@ Matrix multiplication $AB = C$, $A \in \mathbb{R}^{m \times k}$, $B \in \mathbb{
 
 The transformer is an embedding layer, a constant number of self-attention and MLP blocks, and an output layer. Each layer itself can be decomposed into a constant number of matrix multiplications / element-wise computations, which gives an intuitive sense for why transformers are in $TC_0$. Even though self-attention is an $O(T^2)$ matrix multiplication, we have shown that as long as the matmul is polynomial in $T$ it is in $TC_0$.
 
-A computation that is not in $TC_0$ might involve not just increasing the size of the matrix multiplication as input size grows (as we do in attention), but rather layering on *more* matrix multiplications as the input size grows. This is how RNNs / SSMs work, which is what we'll look at next.
+A computation that is not in $TC_0$ might involve not just increasing the *size* of the matrix multiplication as input size grows (as we do in attention), but rather layering on *more* layers of matrix multiplication as the input size grows. This is how RNNs and SSMs work, which is what we'll look at next.
 
 ### RNNs are $$\text{NC}^1$$-complete
 
@@ -189,11 +189,29 @@ $$
 h_t=f(A h_{t-1}+Bx_t),\quad y_t=g(C h_t),
 $$
 
-for some nonlinear activation functions $f$ and $g$, and weights $A,B,C$. Crucially, the same operation is iterated $T$ times, with each iteration depending on the previous hidden state. This means the *depth* of the computation grows with the size of the input. Note that this is not a proof that RNNs are not in $\text{TC}^0$, but rather strong intuition for why it should not be. 
+for some nonlinear activation functions $f$ and $g$, and weights $A,B,C$. Crucially, the same operation is iterated $T$ times, with each iteration depending on the previous hidden state. This means the *depth* of the computation grows with the size of the input.
 
-Now prove $S^5$ is nc1-complete.
+In fact, we can prove that RNNs are $\text{NC}^1$-complete, thus beyond $\text{TC}^0$ under the assumption that $\text{TC}^0\neq \text{NC}^1$ (recall that $C$-complete means that the computation is both in complexity class $C$ and $C$-hard, meaning at least as hard as every other computation in $C$). We know that RNNs are in $\text{NC}^1$ since they can be computed using the binary tree decomposition from earlier We can show this by showing that they can solve $S_5$ state tracking, which is known to be $\text{NC}^1$-hard.
 
-RNNs can solve state-tracking. Basically there's 120 states and you just use a 120-D hidden state with one-hot basis vectors for each permutation, and then impl. I'll finish this -adam
+{% include dd_parent_open.liquid title="Proof Sketch for $S_5$ being $\text{NC}^1$-hard" %}
+
+We need to start with a problem that we know to be $\text{NC}^1$-hard, and then perform a reduction to $S_5$ state tracking.
+
+In particular, we start with the *boolean formula evaluation problem*: 
+> Given a formula $F(x_1,\ldots, x_n)$ of AND, OR, and NOT gates, is $F(x)=1$ for a given assignment?
+Given any circuit in $\text{NC}^1$, we can convert it to a boolean formula evaluation problem by just duplicating the shared components of the circuit. Duplicating the shared parts just increases the size polynomially, but the depth stays $O(\log n)$.
+
+Barrington, 1986. "permutation branching programs", a bit nontrivial but working on it -adam
+
+{% include dd_parent_close.liquid %}
+
+It is actually quite easy to show that RNNs can solve $S_5$ state tracking. Concretely, there are $120$ states that we need to track. We can use a $120$-dimensional hidden state $h_t$ in our RNN that represents each type of permutation as a one-hot basis vector. For each input permutation $a$, let $$P_a\in\{0,1\}^{120\times 120}$$ be the permutation matrix for applying $a$ through left-multiplication. We have $h_0=\text{identity permutation}$, and $h_t=P_{x_t}h_{t-1}$. 
+
+We can construct an RNN with a weight matrix $A$ of dimensions $120^2\times 120$ that computes all the possible values of $P_ah_{t-1}$ in parallel. Then, we can have $B$ be a matrix of dimension $120^2\times 120$ that maps the one-hot input $x_t$ to a mask, with a $0$ in the $120$ entries that the input corresponds to and a large negative number in every other entry. Then, with a ReLU activation function $f$, the transition $h_t=f(A h_{t-1}+Bx_t)$ computes the permutation composition, storing the new state in $h_t$.
+
+More generally, RNNs can simulate any deterministic finite automaton (DFA) in a similar way. The same reasoning extends to other RNN variants as well, such as LSTMs and GRUs. 
+
+One of the big issues with these models though is that their sequential computation means an inability to have efficient parallelized training. Structured State Space Models (SSMs) came along as a parallelizable RNN.
 
 ### Some SSMs are in $$\text{TC}^0$$
 
@@ -204,7 +222,7 @@ h_{t+1} = A_t\, h_t + B_t\, x_t, \;\;
 y_t = C_t\, h_t,
 $$
 
-where the matrices $A_t, B_t, C_t$ may be time-varying and/or depend on the input (e.g., $A_t = A(x_t)$).
+where the matrices $A_t, B_t, C_t$ may be time-varying and/or depend on the input (e.g., $A_t = A(x_t)$). Note the lack of nonlinearity between layers.
 
 We can also unroll the recurrence, which gives us the form
 
@@ -216,7 +234,7 @@ In the special case where $A_j = A$ (non time-varying), we can see that the abov
 
 {% include dd_parent_open.liquid title="Proof Sketch for Matrix Powering" %}
 
-The main insight is the to use the Cayley-Hamilton theorem to reduce the problem of multiplying a matrix $n$ times to multiplying it only $k$ times for some constant $k$.
+The main insight is to use the Cayley-Hamilton theorem to reduce the problem of multiplying a matrix $n$ times to multiplying it only $k$ times for some constant $k$.
 
 This theorem states that if we compute the characteristic polynomial for a matrix $M$: $$f(\lambda) = \det{(M - \lambda I)}$$
 
