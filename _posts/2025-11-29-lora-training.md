@@ -63,7 +63,13 @@ The bloppost attempts to derive a relationship between the FullFT and LoRA learn
 
 They assume that full finetuning can be approximated as $W=W_0+BA$ with $B\in\mathbb{R}^{d\times (d/2)}$, $A\in\mathbb{R}^{(d/2)\times d}$, using learning rate $\mathrm{LR}_{\mathrm{FullFT}}$. This choice of dimensions is to match the number of parameters between FullFT and a hypothetical full-rank LoRA.
 
-To match the effective learning rates, they set $\frac{\alpha}{d / 2} \mathrm{LR}_{\text{LoRA}} = \mathrm{LR}_{\mathrm{FullFT}}$, which gives:
+To match the effective learning rates, they set
+
+$$
+\text{LR}_{\text{FullFT}} = \frac{\alpha}{d / 2} \text{LR}_{\text{LoRA}}
+$$
+
+which gives:
 
 $$
 \frac{\text{LR}_{\text{LoRA}}}{\text{LR}_{\text{FullFT}}}=\frac{d}{2\alpha}.
