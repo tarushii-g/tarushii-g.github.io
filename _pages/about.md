@@ -23,4 +23,4 @@ latest_posts:
   limit: 3 # leave blank to include all the blog posts
 ---
 
-I am a undergraduate at MIT studying computer science.
+I am an undergraduate at MIT studying computer science.
