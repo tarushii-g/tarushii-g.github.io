@@ -23,7 +23,18 @@ ninja.data = [{
           handler: () => {
             window.location.href = "/cv/";
           },
-        },{id: "books-the-godfather",
+        },{id: "post-lora-training-dynamics",
+        
+          title: "LoRA Training Dynamics",
+        
+        description: "Trying to get LoRA to match FullFT",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2025/lora-training/";
+          
+        },
+      },{id: "books-the-godfather",
           title: 'The Godfather',
           description: "",
           section: "Books",handler: () => {
