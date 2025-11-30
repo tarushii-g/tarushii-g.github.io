@@ -26,7 +26,7 @@ toc:
 
 ---
 
-A few months ago, I was reading [LoRA without Regret](https://thinkingmachines.ai/blog/lora/), and the result [that the optimal learning rate for LoRA is 10x the optimal learning rate for FullFT](https://thinkingmachines.ai/blog/lora/#lora-rank) (Figure 2) stuck out to me as very mysterious. Particularly, this result is independent of the model hidden dimension $d$. Imagine you have two weight matrices, one is $2048\times 2048$, and the other is $8192\times 8192$, and you train a rank-1 LoRA adapter on top of them. Even though the ratio between the FullFT rank and the LoRA rank is drastically different, the ratio between the optimal learning rates is the same. How does this make any sense?
+A few months ago, I was reading [LoRA without Regret](https://thinkingmachines.ai/blog/lora/), and the result [that the optimal learning rate for LoRA is 10x the optimal learning rate for FullFT](https://thinkingmachines.ai/blog/lora/#lora-rank) (Figure 2) stuck out to me as very mysterious. Particularly, this result is independent of the model hidden dimension $d$. Imagine you have two weight matrices, one is $2048\times 2048$, and the other is $8192\times 8192$, and you train a rank-1 LoRA adapter on top of them. Even though the ratio between the FullFT rank and the LoRA rank is drastically different, the ratio between the optimal learning rates is the same. Taking this argument to its limit, as $d \rightarrow \infty$, you would think that fixed-size the LoRA adapter does progressively worse and needs a progressively larger learning rate, but it doesn't. How does this make any sense?
 
 # Background on LoRA
 
@@ -59,7 +59,7 @@ Thus, in practice, we parametrize $W' = W + \frac{\alpha}{r} BA$ for Adam and $W
 
 ## The Blogpost
 
-The bloppost attempts to derive a relationship between the FullFT and LoRA learning rates. They start with the assumption that full-rank LoRA is directly comparable to FullFT. To be honest, I didn't fully understand their derivation, but this is my best approximation of it:
+The blogpost attempts to derive a relationship between the FullFT and LoRA learning rates. They start with the assumption that full-rank LoRA is directly comparable to FullFT. To be honest, I didn't fully understand their derivation, but this is my best approximation of it:
 
 They assume that full finetuning can be approximated as $W=W_0+BA$ with $B\in\mathbb{R}^{d\times (d/2)}$, $A\in\mathbb{R}^{(d/2)\times d}$, using learning rate $\mathrm{LR}_{\mathrm{FullFT}}$. This choice of dimensions is to match the number of parameters between FullFT and a hypothetical full-rank LoRA.
 
@@ -95,7 +95,7 @@ This analysis also incorrectly predicts a dependence on $d$, which contradicts t
 
 It is clear empirically that both of the analyses above are false. So what is going on?
 
-The key insight is that the incorrect assumption we have been making is that $a_i$ remains unaligned with the gradient. For simplicity, let's assume that we are looking at a rank-$1$ LoRA, trained under SGD. While it is true that $a_i$ starts unaligned at the very beginning of training, within a few steps, $a_i$ will actually align to become very close to the top right singular vector of $G$!
+The key insight is that the incorrect assumption we have been making is that $a_i$ remains unaligned with the gradient. For simplicity, let's assume that we are looking at a rank-1 LoRA, trained under SGD. While it is true that $a_i$ starts unaligned at the very beginning of training, within a few steps, $a_i$ will actually align to become very close to the top right singular vector of $G$!
 
 To get a sense of why this happens, first consider that since $b_i$ is initialized to zero, it will always be in the direction of the projected gradient: $b_i \propto -G a_i$.
 
@@ -127,7 +127,7 @@ After I independently discovered this, I realized there is a wonderful [paper](h
 
 This analysis also sparks a cool idea: instead of forcing $A$ to evolve into the top right singular vector of $G$, what if you just initialize it so? You can calculate the SVD from the first step of finetuning, and then reinitialize $A$ to the top right singular vector.
 
-I compared this approach to standard Kaiming initialization and FullFT, using Adam as my optimizer and $\alpha=32$ to match the setting of Thinking Machine's experiment. This improved initialization results in optimal learning rates that match FullFT, suggesting that its early training dynamics are a better approximation of it!
+I compared this approach to standard Kaiming initialization and FullFT, using Adam as my optimizer and $\alpha=32$ to match the setting of Thinking Machine's experiment. I'm training a rank-1 LoRA for Llama-3.2-3B on the Tulu-3 Dataset, and the full reproduction code can be found [here](https://github.com/2022tgoel/lora_blogpost_code). This is something of a reproduction of a result in some [other](https://arxiv.org/pdf/2407.05000) [papers](https://arxiv.org/pdf/2502.01235) that introduce the idea. This improved initialization results in optimal learning rates that match FullFT, suggesting that its early training dynamics are a better approximation of it!
 
 {% include figure.liquid loading="eager" path="assets/img/lora_vs_fullft_adam_svd_init.png" class="img-fluid rounded z-depth-1" %}
 
