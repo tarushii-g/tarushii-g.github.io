@@ -42,7 +42,7 @@ $$
 
 The update to the entire LoRA matrix is the sum of these contributions, $U_{W_{\text{LoRA}}} = (1/r)\sum_{i=1}^r U_{(b_i a_i^\top)}$. Because all $(b_i^{(0)}, a_i^{(0)})$ pairs are drawn i.i.d. from the same initialization distribution, the gradients $\nabla_{b_i} L$ and $\nabla_{a_i} L$ at step 1 have identical distributions across ranks, and therefore each rank-1 update $U_{(b_i a_i^\top)}$ has the same expectation. If we denote this common expectation by $\mu$, then $\mathbb{E}\left[U_{W_{\text{LoRA}}}\right] = (1/r)\sum_{i=1}^r \mathbb{E}\left[U_{(b_i a_i^\top)}\right] = \mu$. Since the expected update contributed by each rank-1 component is independent of the rank, the total LoRA update is simply the average of $r$ identically distributed terms.
 
-When you are using SGD, the analysis is a bit different. In this case, *the expected update scales with the gradient*, and the gradient is proportional to $\gamma$. Thus, the expected update in a rank-$r$ adapter, $E\left[U^r_{(b_i a_i^\top)}\right]$, is equal to $\frac{\gamma(r)}{\gamma(1)} \mathbb{E}\left[U^1_{(b_i a_i^\top)}\right]$.
+When you are using SGD, the analysis is a bit different. In this case, *the expected update scales with the gradient*, and the gradient is proportional to $\gamma$. In Adam, the update is in the direction of the normalized gradient, so the direction of the gradient is what matters, not its magnitude (a useful intuition to have is that Adam is approximately SignGD). Thus, under SGD, the expected update in a rank-$r$ adapter, $E\left[U^r_{(b_i a_i^\top)}\right]$, is equal to $\frac{\gamma(r)}{\gamma(1)} \mathbb{E}\left[U^1_{(b_i a_i^\top)}\right]$.
 
 $$
 \mathbb{E}\left[U_{W_{\text{LoRA}}}\right]
@@ -53,7 +53,7 @@ $$
 
 To keep the expected update constant, we need $\gamma(r) \propto \frac{1}{\sqrt{r}}$.
 
-Thus, in practice, we parametrize $W' = W + \frac{\alpha}{r} BA$ for Adam and $W' = W + \frac{\alpha}{\sqrt{r}} BA$ for SGD, where $\alpha$ is a hyperparameter. Additionally, we usually initialize $B$ to zero and randomly initialize $A$.
+Thus, in practice, we parametrize $W' = W + \frac{\alpha}{r} BA$ for Adam and $W' = W + \frac{\alpha}{\sqrt{r}} BA$ for SGD, where $\alpha$ is a hyperparameter. Additionally, we usually initialize $B$ to zero and randomly initialize $A$. Now, we have a parametrization of LoRA such that the optimal learning rate is rank-invariant, which enables us to reason about the relationship between FullFT and LoRA learning rates.
 
 # An Incorrect Starting Point
 
