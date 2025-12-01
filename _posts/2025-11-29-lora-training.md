@@ -48,7 +48,7 @@ $$
 \mathbb{E}\left[U_{W_{\text{LoRA}}}\right]
 = \gamma(r) \mathbb{E}\left[ \sum_{i=1}^r U^r_{b_i a_i^\top} \right] \\
 = \frac{\gamma(r)^2}{\gamma(1)} \mathbb{E}\left[ \sum_{i=1}^r U^1_{b_i a_i^\top} \right] \\
-= \gamma(1) \mathbb{E}\left[\sum_{i=1}^r U^1_{b_i a_i^\top}\right]
+= \gamma(1) \mathbb{E}\left[U^1_{b_i a_i^\top}\right]
 $$
 
 To keep the expected update constant, we need $\gamma(r) \propto \frac{1}{\sqrt{r}}$.
@@ -135,6 +135,6 @@ Note that I only ran training for 100 steps: while I have not tried it, I suspec
 
 # Acknowledgements
 
-Thanks to [Adam Zweiger](https://adamzweiger.github.io/) and [Atticus Wang](https://chry-santhemum.github.io/website/about/) for some early conversations and ideas that inspired me to look into this topic. I'm also extremely grateful to [Modal](https://modal.com) for sponsoring compute and making it possible to play around with a B200 all day!
+Thanks to [Adam Zweiger](https://adamzweiger.github.io/) and [Atticus Wang](https://chry-santhemum.github.io/website/about/) for some ideas that prompted this post, and thanks to [Nathan Wang](https://thecodingwizard.me/) for giving feedback on a draft. I'm also extremely grateful to [Modal](https://modal.com) for sponsoring compute and making it possible to play around with a B200 all day!
 
 {% include citation.liquid %}
