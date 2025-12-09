@@ -83,9 +83,9 @@ I will present yet another way of arriving at a similar result when using SGD, t
 
 Typically during training, $B$ is initialized to zero, while $A$ is initialized through some form of Kaiming initialization. Thus, early on, most of the update comes from $B$ (the gradients flowing to $A$ are close to zero). This means $U_{b_i a_i^\top} \approx U_{b_i} a_i^\top$.
 
-Suppose $G$ is the gradient flowing to the total LoRA matrix $BA$. Then, $U_{b_i} \propto G_{b_i} = G a_i$. The total amount by which the update moves in the direction of the gradient is $\lVert U_{b_i} a_i a_i^\top \odot G\rVert_1 \propto \lVert G a_i a_i^\top \odot G\rVert_1 = \lVert G a_i\rVert_2^2$.
+Suppose $G$ is the gradient flowing to the total LoRA matrix $BA$. Then, $U_{b_i} \propto G_{b_i} = G a_i$. The total amount by which the update moves in the direction of the gradient is $\langle U_{b_i} a_i a_i^\top, G \rangle \propto \langle G a_i a_i^\top, G\rangle = \lVert G a_i\rVert_2^2$.
 
-If we consider a single row of $G$, which I denote as $g_i$, then the amount by which the update moves in the direction of the gradient for that row is $\lVert g_i \rVert \lVert a_i \rVert \cos^2{\theta}$, where $\theta$ is the angle between $a_i$ and $g_i$. So, if your LoRA matrix is more aligned with the gradient, your adapters will receive larger updates.
+If we consider a single row of $G$, which I denote as $g^j$, then the amount by which the update moves in the direction of the gradient for that row is $\lVert g^j \rVert^2 \lVert a_i \rVert^2 \cos^2{\theta}$, where $\theta$ is the angle between $a_i$ and $g^j$. So, if your LoRA matrix is more aligned with the gradient, your adapters will receive larger updates.
 
 Assuming $a_i$ is a randomly initialized $d$-dimensional normal vector, $\mathbb{E}[\cos^2{\theta}] \propto \frac{1}{d}$. Thus, to get the same total movement in the direction of the gradient under LoRA, you would need a $d$ times larger learning rate!
 
